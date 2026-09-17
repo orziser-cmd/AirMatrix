@@ -1,0 +1,15 @@
+{"ticket_id": "TK101", "passenger_name": "David Levi", "flight_number": "LY001", "base_price": 450.0, "is_business": false, "seat_number": "14B"}
+{"ticket_id": "TK102", "passenger_name": "Sarah Cohen", "flight_number": "LY001", "base_price": 1200.0, "is_business": true, "seat_number": "02A"}
+{"ticket_id": "TK103", "passenger_name": "Yossi Mizrahi", "flight_number": "LY002", "base_price": 550.0, "is_business": false, "seat_number": "22C"}
+{"ticket_id": "TK104", "passenger_name": "Noa Peretz", "flight_number": "LY002", "base_price": 1350.0, "is_business": true, "seat_number": "01B"}
+{"ticket_id": "TK105", "passenger_name": "Itamar Golan", "flight_number": "LY003", "base_price": -200.0, "is_business": false, "seat_number": "18D"}
+{"ticket_id": "TK106", "passenger_name": "Maya Katz", "flight_number": "LY003", "base_price": 400.0, "is_business": false, "seat_number": "19A"}
+{"ticket_id": "TK107", "passenger_name": "Omer Dahan", "flight_number": "LY001", "base_price": 1100.0, "is_business": true, "seat_number": "03C"}
+{"ticket_id": "TK108", "passenger_name": "Gal Friedman", "flight_number": "LY004", "base_price": 620.0, "is_business": false, "seat_number": "15F"}
+{"ticket_id": "TK109", "passenger_name": "Tamar Shani", "flight_number": "LY004", "base_price": 1400.0, "is_business": true, "seat_number": "02B"}
+{"ticket_id": "TK110", "passenger_name": "Eran Ben David", "flight_number": "LY005", "base_price": 480.0, "is_business": false, "seat_number": "25A"}
+{"ticket_id": "TK111", "flight_number": "LY005", "base_price": 500.0, "is_business": false, "seat_number": "25B"}
+{"ticket_id": "TK112", "passenger_name": "Shira Avraham", "flight_number": "LY002", "base_price": 1250.0, "is_business": true, "seat_number": "01A"}
+{"ticket_id": "TK113", "passenger_name": "Alon Mor", "flight_number": "LY003", "base_price": 700.0, "is_business": false, "seat_number": "12C"}
+{"ticket_id": "TK114", "passenger_name": "Dana Ziv", "flight_number": "LY001", "base_price": 1600.0, "is_business": true, "seat_number": "03A"}
+{"ticket_id": "TK115", "passenger_name": "Yuval Bar", "flight_number": "LY005", "base_price": 520.0, "is_business": false, "seat_number": "16E"}
