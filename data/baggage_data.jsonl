@@ -1,0 +1,16 @@
+{"bag_id": "BAG-101", "ticket_id": "T101", "weight_kg": 18.5, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-102", "ticket_id": "T101", "weight_kg": 14.0, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-103", "ticket_id": "T102", "weight_kg": 27.2, "bag_type": "overweight", "status": "HELD_OVERWEIGHT"}
+{"bag_id": "BAG-104", "ticket_id": "T103", "weight_kg": 21.0, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-105", "ticket_id": "T104", "weight_kg": 9.5, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-106", "ticket_id": "T105", "weight_kg": 29.8, "bag_type": "overweight", "status": "HELD_OVERWEIGHT"}
+{"bag_id": "BAG-107", "ticket_id": "T106", "weight_kg": 16.0, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-108", "ticket_id": "T107", "weight_kg": 22.5, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-109", "ticket_id": "T108", "weight_kg": 19.3, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-110", "ticket_id": "T109", "weight_kg": 31.0, "bag_type": "overweight", "status": "HELD_OVERWEIGHT"}
+{"bag_id": "BAG-111", "ticket_id": "T110", "weight_kg": 15.4, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-112", "ticket_id": "T111", "weight_kg": 11.2, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-113", "ticket_id": "T112", "weight_kg": 20.1, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-114", "ticket_id": "T113", "weight_kg": 24.5, "bag_type": "overweight", "status": "HELD_OVERWEIGHT"}
+{"bag_id": "BAG-998", "ticket_id": "T999", "weight_kg": 17.0, "bag_type": "standard", "status": "CHECKED_IN"}
+{"bag_id": "BAG-999", "ticket_id": "T-INVALID", "weight_kg": 22.0, "bag_type": "standard", "status": "CHECKED_IN"}
