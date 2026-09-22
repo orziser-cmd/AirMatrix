@@ -1,8 +1,8 @@
-from models import EconomyTicket, BusinessTicket, Passenger
-from repository import TicketRepository
-from context_managers import TemporaryDiscount
-from iterators import (FlightSchedule,active_business_tickets_generator,run_lazy_ticket_pipeline)
-from processing import demonstrate_sorting
+from AirMatrix.models import EconomyTicket, BusinessTicket, Passenger
+from AirMatrix.repository import TicketRepository
+from AirMatrix.context_managers import TemporaryDiscount
+from AirMatrix.iterators import (FlightSchedule,active_business_tickets_generator,run_lazy_ticket_pipeline)
+from AirMatrix.processing import demonstrate_sorting
 
 
 def main():
@@ -11,8 +11,7 @@ def main():
     print("=" * 60)
 
     # נתיב יחסי למיקום הקובץ שפועל בצורה יציבה מכל מקום
-    repo = TicketRepository("../data/sample_data.jsonl")
-
+    repo = TicketRepository("data/sample_data.jsonl")
 
     loaded_tickets = [] #מאתחל רשימה ריקה של כרטיסים לאיסוף אובייקטים לבדיקות
     print("טעינת כרטיסים בהדרגה מהקובץ:")

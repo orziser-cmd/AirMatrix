@@ -19,6 +19,5 @@ class TemporaryDiscount:#בדיקת הנחה זמנית על כרטיס טיסה
         # שחזור המחיר המקורי
         self.ticket.base_price = self.original_price
         print(f"[EXIT] המחיר הוחזר למקור: {self.ticket.base_price}")
-
         # לא מסתירים את השגיאה (חריגה תמשיך הלאה אם הייתה)
         return False

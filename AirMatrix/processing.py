@@ -1,18 +1,12 @@
 from collections import deque
 import heapq
 
-# =====================================================================
-# 1. list ו-tuple (כולל איסוף שאר הערכים עם *)
-# =====================================================================
+#חלק ג' - מבני נתונים ואוספים
 def demonstrate_list_and_tuples(flights):
-    """
-    רשימה (list): אוסף טיסות הניתן לשינוי.
-    טאפל (tuple): רשומה קבועה וקצרה של תמצית טיסה (flight_number, origin, destination).
-    שימוש ב-* לאיסוף ערכים שנותרו מתוך שורת נתונים.
-    """
-    # טאפל כרשומה קבועה שלא תשתנה
-    flight_records = []
-    for f in flights:
+    #רשימה (list): אוסף טיסות הניתן לשינוי
+    #טאפל (tuple): רשומה קבועה וקצרה של תמצית טיסה (flight_number, origin, destination)
+    flight_records = [] #מקבל רשימת טיסות ויוצר רשימה חדשה
+    for f in flights:#עובר בלולאה ומכניס את הטיסות לטאפל
         record = (f.flight_number, f.origin, f.destination)
         flight_records.append(record)
 
@@ -22,31 +16,20 @@ def demonstrate_list_and_tuples(flights):
 
     return flight_records, extra_airport_details
 
-
-# =====================================================================
-# 2. set (ערכים ייחודיים, פעולות קבוצתיות ואימות)
-# =====================================================================
+#set (ערכים ייחודיים, פעולות קבוצתיות ואימות)
 def demonstrate_sets(all_tickets, cancelled_ticket_ids):
-    """
-    שימוש ב-set לשמירת מזהים ייחודיים ובדיקות קבוצתיות.
-    הערכים הם מחרוזות (hashable).
-    """
-    # יצירת קבוצת כל מזהי הכרטיסים
-    active_ticket_ids = set()
+    #שימוש ב-set לשמירת מזהים ייחודיים ובדיקות קבוצתיות
+    #הערכים הם מחרוזות (hashable)
+    active_ticket_ids = set()# יצירת קבוצת כל מזהי הכרטיסים
     for ticket in all_tickets: #טיפוס שהוא מחרוזת טקסט ולכן הוא האשבל כי הוא אימיוטיבל
-        active_ticket_ids.add(ticket.ticket_id)  # 1. add - הוספת מזהה כרטיס חדש
-
-
-    # 3. בדיקת השתייכות באמצעות in
+        active_ticket_ids.add(ticket.ticket_id)  #  add - הוספת מזהה כרטיס חדש
+    #  בדיקת השתייכות באמצעות in
     is_valid = "T101" in active_ticket_ids
-
     return active_ticket_ids, is_valid
 
-# =====================================================================
-# 3. dict (שני מילונים, get, איטרציית items עם unpacking ומניעת כפילות)
-# =====================================================================
+# dict (שני מילונים, get, איטרציית items עם unpacking ומניעת כפילות)
 def build_tickets_by_id(tickets_list):
-    """מילון 1: איתור אובייקט כרטיס לפי מזהה ייחודי (טיפול בכפילות מזהים)"""
+    #מילון 1: איתור אובייקט כרטיס לפי מזהה ייחודי (טיפול בכפילות מזהים)
     tickets_dict = {} #מילון של כרטיסים
     for ticket in tickets_list:
         if ticket.ticket_id in tickets_dict:#בודק כפילות של מזהה כרטיס
@@ -55,7 +38,7 @@ def build_tickets_by_id(tickets_list):
     return tickets_dict
 
 def group_tickets_by_passenger(tickets_list):
-    """מילון 2: קיבוץ רשימת כרטיסים לפי מזהה נוסע (כולל שימוש ב-get ו-items)"""
+    #מילון 2: קיבוץ רשימת כרטיסים לפי מזהה נוסע (כולל שימוש ב-get ו-items)
     passenger_tickets = {} #מילון של כרטיסי נוסעים
     for ticket in tickets_list:
         p_id = ticket.passenger.passenger_id
@@ -71,23 +54,19 @@ def group_tickets_by_passenger(tickets_list):
 
     return passenger_tickets, summary
 
-# =====================================================================
-# 4. תור FIFO באמצעות deque (עמדת צ'ק-אין / בידוק ביטחוני)
-# =====================================================================
+# תור FIFO באמצעות deque (עמדת צ'ק-אין / בידוק ביטחוני)
 def process_security_queue(baggage_items):
-    """
-    סדר ההגעה קריטי: הוגנות שירות (First-Come, First-Served) בבידוק הביטחוני.
-    מזוודה שהגיעה ראשונה לדלפק נבדקת ומאושרת ראשונה.
-    """
-    security_queue = deque()
+    #סדר ההגעה קריטי: הוגנות שירות (First-Come, First-Served) בבידוק הביטחוני
+    #מזוודה שהגיעה ראשונה לדלפק נבדקת ומאושרת ראשונה
+    security_queue = deque()#יצירת תור חדש
 
-    # הוספת פריטים לסוף התור (לפחות שלושה)
+    # הוספת פריטים לסוף התור
     for bag in baggage_items:
         security_queue.append(bag)
 
     processed_bags = []
     # שליפת פריטים מתחילת התור תוך טיפול בטוח בתור ריק
-    while security_queue:
+    while security_queue:#יעבור ויכנס ללולאה כל עוד אינו ריק
         try:
             current_bag = security_queue.popleft()
             current_bag.pass_security()
@@ -97,24 +76,18 @@ def process_security_queue(baggage_items):
 
     return processed_bags
 
-
-# =====================================================================
-# 5. תור עדיפויות באמצעות heapq (עלייה למטוס - Boarding)
-# =====================================================================
+#  תור עדיפויות באמצעות heapq (עלייה למטוס - Boarding)
 def process_boarding_priority_queue(tickets):
-    """
-    תור עדיפויות: דחיפות קודמת לזמן ההגעה.
-    המספר הקטן מציין עדיפות גבוהה יותר (1 - עסקים, 2 - תיירים).
-    שוויון נפתר בצורה דטרמיניסטית ע"י ticket_id כדי לא להסתמך על השוואת אובייקטים מעורפלת.
-    """
+    #תור עדיפויות: דחיפות קודמת לזמן ההגעה
+    #המספר הקטן מציין עדיפות גבוהה יותר (1 - עסקים, 2 - תיירים)
+    #שוויון נפתר בצורה דטרמיניסטית ע"י ticket_id כדי לא להסתמך על השוואת אובייקטים מעורפלת
     priority_queue = []
-
     # הכנסת פריטים ל-heap (עדיפות, מזהה שובר שוויון, אובייקט)
     for ticket in tickets:
         priority = ticket.get_boarding_priority()
         # מבנה הטאפל מבטיח שוויון יציב: (priority, ticket_id, ticket)
         item = (priority, ticket.ticket_id, ticket)#השוואה גם של עדיפות ומספר כרטיס
-        heapq.heappush(priority_queue, item)
+        heapq.heappush(priority_queue, item)#שולף אוטומטית את האיבר בעל הערך הנמוך ביותר בעדיפות - קודם את 1
 
     boarding_order = []
     while priority_queue:
@@ -123,10 +96,7 @@ def process_boarding_priority_queue(tickets):
 
     return boarding_order
 
-
-# =====================================================================
-# 6. Comprehensions (List, Set, Dict)
-# =====================================================================
+#Comprehensions (List, Set, Dict)
 def demonstrate_comprehensions(tickets):
     # 1. List Comprehension: סינון והמרה - רשימת מחירי כרטיסים סופיים בלבד
     ticket_prices = [t.calculate_final_price() for t in tickets]
@@ -139,12 +109,9 @@ def demonstrate_comprehensions(tickets):
 
     return ticket_prices, unique_flight_numbers, seat_mapping
 
-
-# =====================================================================
-# 7. מיון ופונקציות כערכים (sorted, key, lambda, tuple)
-# =====================================================================
+# מיון ופונקציות כערכים (sorted, key, lambda, tuple)
 def get_ticket_base_price(ticket):
-    """פונקציה רגילה המשמשת כ-key למיון"""
+    #פונקציה רגילה המשמשת כ-key למיון
     return ticket.base_price
 
 def demonstrate_sorting(tickets):
