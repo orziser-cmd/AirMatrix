@@ -5,7 +5,13 @@ from AirMatrix.iterators import (FlightSchedule, active_business_tickets_generat
 from AirMatrix.processing import (demonstrate_sorting, demonstrate_sets, build_tickets_by_id,
                                   group_tickets_by_passenger, process_security_queue,
                                   process_boarding_priority_queue, demonstrate_comprehensions)
-from AirMatrix.reports import generate_baggage_manifest_report
+from AirMatrix.reports import generate_baggage_manifest_report, format_weather_check, format_incident
+from AirMatrix.repository import FlightRepository
+from AirMatrix.config import AppConfig
+from AirMatrix.factories import create_weather_client
+from AirMatrix.services import CargoWeatherService
+import logging
+import sys
 
 
 def main():
@@ -158,8 +164,8 @@ def main():
     for bag in loaded_bags:
         flight_num = tickets_by_id[bag.ticket_id].flight_number
         if flight_num not in manifests:
-            # קיבולת קטנה בכוונה (90 ק"ג) כדי שהדוח יראה גם מצב CRITICAL
-            manifests[flight_num] = BaggageManifest(flight_num, max_total_weight_kg=90.0)
+            # קיבולת קטנה בכוונה (100 ק"ג) כדי שהדוח יראה גם מצב CRITICAL
+            manifests[flight_num] = BaggageManifest(flight_num, max_total_weight_kg=100.0)
         try:
             manifests[flight_num].add_item(bag)
         except ValueError as error:  # חריגת משקל - המזוודה לא נכנסת למניפסט, התוכנית ממשיכה
@@ -173,6 +179,29 @@ def main():
         generate_baggage_manifest_report(manifests[f_num])
     print()
 
+    # 9. שלב 2: תהליך משולב - מזג אוויר ביעד -> החלטה על מטען רגיש בתת-מערכת הכבודה
+    print("=" * 60)
+    print("9. בדיקת מזג אוויר ביעד ועיכוב מטען רגיש (SERVICES)")
+    print("=" * 60)
+    config = AppConfig.from_env()
+    if "--live" in sys.argv:  # דרך מפורשת להפעיל את השירות האמיתי
+        config.use_live_api = True
+    source = "אמיתי מהרשת (Open-Meteo)" if config.use_live_api else "מדומה (ללא רשת)"
+    print(f"מקור נתוני מזג האוויר: {source}")
+
+    flights_by_number = {f.flight_number: f for f in FlightRepository("data/flights.jsonl").load_flights_stream()}
+    weather_service = CargoWeatherService(create_weather_client(config))  # התלות מוזרקת מבחוץ
+    for result in weather_service.check_all_flights(flights_by_number, manifests):
+        for line in format_weather_check(result):
+            print(f"  {line}")
+        print()
+
+    print("פניות פתוחות לצוות הקרקע:")
+    for incident in weather_service.get_open_incidents():
+        print(f"  {format_incident(incident)}")
+    print()
+
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     main()
