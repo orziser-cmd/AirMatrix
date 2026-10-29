@@ -1,9 +1,11 @@
-from AirMatrix.models import EconomyTicket, BusinessTicket, Passenger, BaggageManifest, BaggageItem
-from AirMatrix.repository import TicketRepository
+from AirMatrix.models import EconomyTicket, BusinessTicket, Passenger, BaggageManifest, Flight
+from AirMatrix.repository import TicketRepository, BaggageRepository
 from AirMatrix.context_managers import TemporaryDiscount
 from AirMatrix.iterators import (FlightSchedule, active_business_tickets_generator, run_lazy_ticket_pipeline)
-from AirMatrix.processing import demonstrate_sorting
-import json
+from AirMatrix.processing import (demonstrate_sorting, demonstrate_sets, build_tickets_by_id,
+                                  group_tickets_by_passenger, process_security_queue,
+                                  process_boarding_priority_queue, demonstrate_comprehensions)
+from AirMatrix.reports import generate_baggage_manifest_report
 
 
 def main():
@@ -34,7 +36,26 @@ def main():
         f"כרטיס עסקים: {demo_bus.passenger.full_name}, מחיר סופי: {demo_bus.calculate_final_price()}\n")  # פולימורפיזם מתווספת עלות כניסה לטרקלין
 
     print("=" * 60)
-    print("3. מיון נתונים ופונקציות כערכים (PROCESSING)")
+    print("3. מבני נתונים: set, dict, heapq ו-comprehensions (PROCESSING)")
+    print("=" * 60)
+    still_active, valid_cancel, cancel_check = demonstrate_sets(loaded_tickets, ["TK101", "TK999"])
+    print(f"ביטולים שתואמים לכרטיס קיים (חיתוך): {sorted(valid_cancel)}")
+    print(f"בדיקת השתייכות לכל ביטול (in): {dict(sorted(cancel_check.items()))}")
+    print(f"כרטיסים שנשארו פעילים (הפרש): {len(still_active)}")
+
+    tickets_by_id = build_tickets_by_id(loaded_tickets)  # מילון 1 - איתור לפי מזהה
+    print(f"איתור לפי מזהה TK104: {tickets_by_id.get('TK104')}")
+    _, count_per_passenger = group_tickets_by_passenger(loaded_tickets)  # מילון 2 - ספירה
+    print(f"נוסעים עם כרטיסים: {len(count_per_passenger)}")
+
+    boarding = process_boarding_priority_queue(loaded_tickets)  # heapq - עסקים לפני תיירים
+    print(f"3 הראשונים בתור העלייה: {[t.ticket_id for t in boarding[:3]]}")
+
+    prices, flight_numbers, seat_map = demonstrate_comprehensions(loaded_tickets)
+    print(f"מספרי טיסות ייחודיים (set comprehension): {sorted(flight_numbers)}\n")
+
+    print("=" * 60)
+    print("3ב. מיון נתונים ופונקציות כערכים (PROCESSING)")
     print("=" * 60)
     by_price, by_seat, by_priority_and_price = demonstrate_sorting(loaded_tickets)  # מיון ב3 סוגי נתונים
 
@@ -54,10 +75,10 @@ def main():
     print("=" * 60)
     print("4. איטרטורים שני ITERATORS עצמאיים על אותו אובייקט")
     print("=" * 60)
-    schedule = FlightSchedule()  # יצירת לוח טיסות ומכניס 3 טיסות
-    schedule.add_flight("טיסה 101 לרומא")
-    schedule.add_flight("טיסה 202 לפריז")
-    schedule.add_flight("טיסה 303 ללונדון")
+    schedule = FlightSchedule()  # יצירת לוח טיסות ומכניס 3 אובייקטי Flight אמיתיים
+    schedule.add_flight(Flight("LY001", "TLV", "FCO", 180))
+    schedule.add_flight(Flight("LY002", "TLV", "CDG", 200))
+    schedule.add_flight(Flight("LY003", "TLV", "LHR", 220))
 
     it1 = iter(schedule)
     it2 = iter(schedule)
@@ -126,38 +147,32 @@ def main():
     print("8. ניהול כבודה ומניפסט (BaggageManifest & BaggageItem)")
     print("=" * 60)
 
-    baggage_manifests = {}
-    try:
-        with open("data/baggage_data.jsonl", "r", encoding="utf-8") as bag_file:
-            for line_num, line in enumerate(bag_file, start=1):
-                clean_line = line.strip()
-                if not clean_line:
-                    continue
-                try:
-                    bag_data = json.loads(clean_line)
-                    flight_num = "LY001"  # שיוך טיסה להדגמה
+    # בדיקת קשרים: מזוודה נקלטת רק אם הכרטיס שלה קיים בקובץ הכרטיסים
+    bag_repo = BaggageRepository("data/baggage_data.jsonl")
+    valid_ids = set(tickets_by_id)
+    loaded_bags = list(bag_repo.load_baggage_stream(valid_ticket_ids=valid_ids))
+    print(f"נקלטו {len(loaded_bags)} מזוודות המקושרות לכרטיסים קיימים.\n")
 
-                    if flight_num not in baggage_manifests:
-                        baggage_manifests[flight_num] = BaggageManifest(flight_number=flight_num,
-                                                                        max_total_weight_kg=3500.0)
+    # שיוך כל מזוודה למניפסט של הטיסה שלה - לפי הכרטיס (ולא טיסה קבועה)
+    manifests = {}
+    for bag in loaded_bags:
+        flight_num = tickets_by_id[bag.ticket_id].flight_number
+        if flight_num not in manifests:
+            # קיבולת קטנה בכוונה (90 ק"ג) כדי שהדוח יראה גם מצב CRITICAL
+            manifests[flight_num] = BaggageManifest(flight_num, max_total_weight_kg=90.0)
+        try:
+            manifests[flight_num].add_item(bag)
+        except ValueError as error:  # חריגת משקל - המזוודה לא נכנסת למניפסט, התוכנית ממשיכה
+            print(f"  {bag.baggage_id} לא נוספה: {error}")
 
-                    bag_item = BaggageItem(
-                        baggage_id=bag_data["bag_id"],
-                        ticket_id=bag_data["ticket_id"],
-                        weight_kg=float(bag_data["weight_kg"])
-                    )
-                    baggage_manifests[flight_num].add_item(bag_item)
-                except Exception as e:
-                    print(f"  שגיאה בטעינת פריט כבודה בשורה {line_num}: {e}")
+    # תור FIFO לבידוק ביטחוני
+    screened, held = process_security_queue(loaded_bags)
+    print(f"בידוק ביטחוני (FIFO): עברו {len(screened)}, מעוכבות {len(held)}: {[b.baggage_id for b in held]}\n")
 
-        for f_num, manifest in baggage_manifests.items():
-            print(f"טיסה {f_num}: נטענו בהצלחה {len(manifest.items)} פריטי כבודה.")
-            print(
-                f"  משקל כבודה כולל במנפסט: {manifest.get_total_weight():.1f} ק\"ג (מתוך {manifest.max_total_weight_kg} ק\"ג מותרים)\n")
-    except FileNotFoundError:
-        print("  קובץנתוני הכבודה לא נמצא בנתיב המוגדר (data/baggage_data.jsonl).\n")
-    print("=" * 60)
+    for f_num in sorted(manifests):
+        generate_baggage_manifest_report(manifests[f_num])
+    print()
 
 
 if __name__ == "__main__":
-    main()
+    main()
