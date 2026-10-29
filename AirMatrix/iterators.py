@@ -39,13 +39,16 @@ def active_business_tickets_generator(tickets):#מקבלת רשימת כרטיס
 
 # צינור עיבוד עצל (Lazy Pipeline) באמצעות Generator Expressions
 def run_lazy_ticket_pipeline(tickets):
-    for t in tickets:
-        # שלב 1: סינון לפי תנאי ראשון (מחיר בסיס מ-500 ומעלה)
-        if t.base_price >= 500:
-            # שלב 2: המרה וחישוב מחיר סופי לכרטיס שעבר
-            final_price = t.calculate_final_price()
-            ticket_id = t.ticket_id
-            # שלב 3: הפקת שדה מסכם (טקסט עם מזהה הכרטיס והמחיר)
-            summary_text = f"Ticket {ticket_id}: Final Price {final_price}"
-            # מוציאים תוצאה אחת בלבד ועוצרים לנוח! כדי שלא ימשיך לרוץ בלולאה
-            yield summary_text
+    # שלושה Generator Expressions מחוברים בשרשרת - אין אף רשימת ביניים.
+    # שום דבר לא מחושב עד שמישהו קורא next() על השלב האחרון.
+
+    # שלב 1: סינון לפי תנאי ראשון (מחיר בסיס מ-500 ומעלה)
+    expensive = (t for t in tickets if t.base_price >= 500)
+
+    # שלב 2: המרה - זוג (מזהה, מחיר סופי) לכל כרטיס שעבר
+    priced = ((t.ticket_id, t.calculate_final_price()) for t in expensive)
+
+    # שלב 3: הפקת שדה מסכם (טקסט עם מזהה הכרטיס והמחיר)
+    summaries = (f"Ticket {ticket_id}: Final Price {price}" for ticket_id, price in priced)
+
+    return summaries
