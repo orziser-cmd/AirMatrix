@@ -12,5 +12,10 @@
 {"bag_id": "BAG-112", "ticket_id": "TK111", "weight_kg": 11.2, "bag_type": "standard", "status": "CHECKED_IN"}
 {"bag_id": "BAG-113", "ticket_id": "TK112", "weight_kg": 20.1, "bag_type": "standard", "status": "CHECKED_IN"}
 {"bag_id": "BAG-114", "ticket_id": "TK113", "weight_kg": 24.5, "bag_type": "overweight", "status": "HELD_OVERWEIGHT"}
+{"bag_id": "BAG-115", "ticket_id": "TK115", "weight_kg": 8.0, "bag_type": "pet", "status": "CHECKED_IN"}
+{"bag_id": "BAG-116", "ticket_id": "TK108", "weight_kg": 6.5, "bag_type": "pet", "status": "CHECKED_IN"}
+{"bag_id": "BAG-117", "ticket_id": "TK101", "weight_kg": 12.0, "bag_type": "perishable", "status": "CHECKED_IN"}
+{"bag_id": "BAG-118", "ticket_id": "TK110", "weight_kg": 10.0, "bag_type": "perishable", "status": "CHECKED_IN"}
+{"bag_id": "BAG-119", "ticket_id": "TK113", "weight_kg": 7.0, "bag_type": "pet", "status": "CHECKED_IN"}
 {"bag_id": "BAG-998", "ticket_id": "T999", "weight_kg": 17.0, "bag_type": "standard", "status": "CHECKED_IN"}
 {"bag_id": "BAG-999", "ticket_id": "T-INVALID", "weight_kg": 22.0, "bag_type": "standard", "status": "CHECKED_IN"}

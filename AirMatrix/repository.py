@@ -1,9 +1,12 @@
 import json
-from AirMatrix.models import BusinessTicket, EconomyTicket, Passenger, BaggageItem, Flight
+from AirMatrix.models import Passenger, Flight
+from AirMatrix.factories import TicketFactory, BaggageFactory
 
 class TicketRepository:
-    def __init__(self, file_path="data/sample_data.jsonl"):#מכיל קובץ של כרטיסים
+    def __init__(self, file_path="data/sample_data.jsonl", ticket_factory=None):#מכיל קובץ של כרטיסים
         self.file_path = file_path
+        # שלב 2: ה-Factory מוזרק מבחוץ - ה-Repository רק קורא ובודק, ולא מחליט איזו מחלקה ליצור
+        self.ticket_factory = ticket_factory if ticket_factory is not None else TicketFactory()
 
     def load_tickets_stream(self):  # טוענת את הקובץ וקוראת שורה שורה של כרטיס ומבצעת בדיקות ולידציה
         seen_ticket_ids = set()  # סט לשמירת מזהי כרטיסים שכבר נקלטו לצורך בדיקת כפילויות
@@ -40,9 +43,8 @@ class TicketRepository:
                         passport_number=passport_num
                     )
 
-                    # בחירת המחלקה המתאימה והמרה לאובייקט באמצעות הבנאי האלטרנטיבי from_dict
-                    ticket_cls = BusinessTicket if data.get("is_business", False) else EconomyTicket
-                    ticket_obj = ticket_cls.from_dict(data, passenger_obj)
+                    # ה-Factory בוחר EconomyTicket / BusinessTicket וממיר דרך from_dict
+                    ticket_obj = self.ticket_factory.create(data, passenger_obj)
 
                     yield ticket_obj  # תציג לי מה קיים באובייקט כרטיס לפי השדות שדרשנו
 
@@ -56,8 +58,9 @@ class TicketRepository:
         return None  # לא נמצא כרטיס עם המזהה המבוקש
 
 class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף ובדיקת קשרים לכרטיסי טיסה קיימים
-    def __init__(self, file_path="data/baggage_data.jsonl"):#מכיל קובץ של נתוני כבודה
+    def __init__(self, file_path="data/baggage_data.jsonl", baggage_factory=None):#מכיל קובץ של נתוני כבודה
         self.file_path = file_path
+        self.baggage_factory = baggage_factory if baggage_factory is not None else BaggageFactory()
 
     def load_baggage_stream(self, valid_ticket_ids=None):#על אותו עקרון כמו קודם קורא את הקובץ
         with open(self.file_path, "r", encoding="utf-8") as file:
@@ -78,7 +81,7 @@ class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף 
                     if valid_ticket_ids is not None and ticket_id not in valid_ticket_ids:
                         raise ValueError(f"מזוודה מקושרת לכרטיס שאינו קיים: {ticket_id}")
 
-                    bag_item = BaggageItem.from_dict(data)  # המרה לאובייקט דרך הבנאי האלטרנטיבי
+                    bag_item = self.baggage_factory.create(data)  # Factory: מזוודה רגילה או מטען רגיש
 
                     yield bag_item#תציג לי מה קיים באובייקט מזוודה לפי השדות שדרשנו
 
