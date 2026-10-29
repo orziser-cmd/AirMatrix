@@ -10,8 +10,12 @@ from AirMatrix.repository import FlightRepository
 from AirMatrix.config import AppConfig
 from AirMatrix.factories import create_weather_client
 from AirMatrix.services import CargoWeatherService
+from AirMatrix.async_processing import AsyncWeatherSource, collect_weather_sequential, collect_weather_concurrent
+from AirMatrix.threaded_processing import PetHoldCapacity, run_checkin_counters
+import asyncio
 import logging
 import sys
+import time
 
 
 def main():
@@ -200,6 +204,43 @@ def main():
     for incident in weather_service.get_open_incidents():
         print(f"  {format_incident(incident)}")
     print()
+
+    # 10. מקביליות אסינכרונית: אותן משימות, פעם סדרתית ופעם במקביל
+    print("=" * 60)
+    print("10. איסוף מזג אוויר אסינכרוני (ASYNCIO - סימולציה)")
+    print("=" * 60)
+    destinations = ["FCO", "CDG", "LHR", "OSL", "DXB"]  # סדר הקלט
+    print(f"סדר הקלט: {destinations}")
+
+    seq_source = AsyncWeatherSource.from_file("data/simulated_weather.jsonl")
+    start = time.perf_counter()
+    sequential = asyncio.run(collect_weather_sequential(seq_source, destinations))
+    seq_time = time.perf_counter() - start
+
+    con_source = AsyncWeatherSource.from_file("data/simulated_weather.jsonl")
+    start = time.perf_counter()
+    concurrent = asyncio.run(collect_weather_concurrent(con_source, destinations))
+    con_time = time.perf_counter() - start
+
+    for destination, result in concurrent:
+        value = f"{result.temperature_c}°C" if not isinstance(result, Exception) else f"שגיאה: {result}"
+        print(f"  {destination}: {value}")
+    print(f"סדר הסיום בפועל (במקביל): {con_source.completion_order}")
+    print(f"זמן סדרתי: {seq_time:.2f} שניות | זמן אסינכרוני: {con_time:.2f} שניות")
+    same = [(d, str(r)) for d, r in sequential] == [(d, str(r)) for d, r in concurrent]
+    print(f"התוצאות זהות בשתי הגרסאות ולפי סדר הקלט: {same}\n")
+
+    # 11. Threads ומשאב משותף: מקום אחרון בתא בעלי החיים
+    print("=" * 60)
+    print("11. THREADS + LOCK: שריון המקום האחרון בתא בעלי החיים")
+    print("=" * 60)
+    pet_hold = PetHoldCapacity("LY001", total_slots=1)
+    requests_at_counters = ["PET-A", "PET-B", "PET-C", "PET-D", "PET-E"]
+    outcomes = run_checkin_counters(pet_hold, requests_at_counters)
+    approved = [bag for bag, ok in outcomes.items() if ok]
+    print(f"{len(requests_at_counters)} דלפקים ניסו במקביל לשריין מקום אחד")
+    print(f"מספר אישורים: {len(approved)} | מקומות פנויים שנשארו: {pet_hold.available_slots()}")
+    print("(איזה דלפק קיבל את המקום משתנה בין הרצות - מה שחשוב הוא שיש בדיוק אישור אחד)\n")
 
 
 if __name__ == "__main__":
