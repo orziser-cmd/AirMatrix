@@ -26,10 +26,14 @@ def demonstrate_sets(all_tickets, cancelled_ticket_ids):
     # שימוש בפרמטר שהתקבל והמרתו לסט לצורך עבודה קבוצתית
     cancelled_set = set(cancelled_ticket_ids)
 
-    # בדיקת השתייכות באמצעות in מול מזהה רלוונטי מתוך הנתונים במקום מזהה קשיח T101
-    check_id = list(cancelled_set)[0] if cancelled_set else "T101"
-    is_valid = check_id in active_ticket_ids
-    return active_ticket_ids, is_valid
+    # בדיקת השתייכות באמצעות in - לכל מזהה מבוטל בודקים אם הוא באמת כרטיס קיים
+    # (לא שולפים "את האיבר הראשון" של set, כי לסט אין סדר מובטח)
+    cancelled_and_known = {tid: (tid in active_ticket_ids) for tid in cancelled_set}
+
+    # פעולות קבוצתיות: הפרש = כרטיסים שנשארו פעילים, חיתוך = ביטולים שתואמים לכרטיס קיים
+    still_active = active_ticket_ids - cancelled_set
+    valid_cancellations = active_ticket_ids & cancelled_set
+    return still_active, valid_cancellations, cancelled_and_known
 
 # dict (שני מילונים, get, איטרציית items עם unpacking ומניעת כפילות)
 def build_tickets_by_id(tickets_list):
@@ -69,16 +73,23 @@ def process_security_queue(baggage_items):
         security_queue.append(bag)
 
     processed_bags = []
-    # שליפת פריטים מתחילת התור תוך טיפול בטוח בתור ריק
-    while security_queue:#יעבור ויכנס ללולאה כל עוד אינו ריק
+    held_bags = []  # מזוודות שלא יכלו לעבור בידוק (למשל מעוכבות בגלל משקל)
+    # שליפת פריטים מתחילת התור; while security_queue עוצר לפני שהתור ריק
+    while security_queue:
+        current_bag = security_queue.popleft()
         try:
-            current_bag = security_queue.popleft()
             current_bag.pass_security()
             processed_bags.append(current_bag)
-        except IndexError:
-            break
+        except ValueError:  # מזוודה שאינה במצב CHECKED_IN לא עוברת בידוק, התור ממשיך
+            held_bags.append(current_bag)
 
-    return processed_bags
+    # טיפול מפורש בתור ריק: popleft על תור ריק זורק IndexError, ואנחנו לא נותנים לו לקרוס
+    try:
+        security_queue.popleft()
+    except IndexError:
+        pass  # התור ריק - אין מזוודות נוספות לבידוק
+
+    return processed_bags, held_bags
 
 #  תור עדיפויות באמצעות heapq (עלייה למטוס - Boarding)
 def process_boarding_priority_queue(tickets):
@@ -141,4 +152,4 @@ def demonstrate_generator_pipeline(tickets):
     # שלב 3: סינון נוסף והפקת מחרוזות תוצאה מותאמות
     formatted_results_gen = (f"Ticket Final Price: {price}" for price in prices_gen if price > 300)
 
-    return formatted_results_gen
+    return formatted_results_gen
