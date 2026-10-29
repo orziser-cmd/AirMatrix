@@ -1,6 +1,7 @@
 # api_client.py - תקשורת בלבד מול שירות מזג האוויר Open-Meteo (https://open-meteo.com/en/docs)
 # האחריות כאן: לשלוח GET, לזהות כשלים, לנסות שוב כשצריך, ולבדוק שהתשובה תקינה.
 # מה עושים עם הטמפרטורה (לעכב מטען או לא) - זו החלטה עסקית, והיא נמצאת ב-services.py.
+import json
 import logging
 import time
 
@@ -104,6 +105,43 @@ def _is_number(value):
     # bool הוא תת-סוג של int בפייתון, ולכן מוציאים אותו במפורש
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
+
+
+class SimulatedWeatherClient:
+    # מקור נתונים מדומה עם אותו חוזה כמו WeatherApiClient (fetch_current_weather).
+    # משמש בהרצת ברירת המחדל ללא רשת. כל דיווח מסומן is_simulated=True, כדי שלא יוצג כנתון אמיתי.
+    def __init__(self, readings):
+        # readings: מילון {(latitude, longitude): (temperature_c, wind_speed_kmh)}
+        # ערך None מדמה תקלה בשירות עבור היעד הזה
+        self.readings = readings
+
+    @classmethod
+    def from_file(cls, path):#טעינת הנתונים המדומים מקובץ JSONL, שורה אחר שורה
+        readings = {}
+        with open(path, "r", encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+                if not line:
+                    continue
+                data = json.loads(line)
+                key = (float(data["latitude"]), float(data["longitude"]))
+                if data.get("simulate_failure", False):
+                    readings[key] = None
+                else:
+                    readings[key] = (float(data["temperature_c"]), float(data["wind_speed_kmh"]))
+        return cls(readings)
+
+    def fetch_current_weather(self, latitude, longitude):
+        key = (float(latitude), float(longitude))
+        if key not in self.readings:
+            raise WeatherDataError(f"No simulated weather for location {key}")
+        reading = self.readings[key]
+        if reading is None:
+            logger.warning("Simulated outage for location %s", key)
+            raise WeatherConnectionError(f"Simulated outage for location {key}")
+        temperature, wind = reading
+        return WeatherReport(latitude, longitude, temperature, wind,
+                             observed_at="simulated", is_simulated=True)
 
 if __name__ == "__main__":
     # בדיקה ידנית מול השירות האמיתי (דורש רשת): python -m AirMatrix.api_client
