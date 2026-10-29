@@ -40,27 +40,20 @@ class TicketRepository:
                         passport_number=passport_num
                     )
 
-                    if data.get("is_business", False):  # המרה לאובייקט כרטיס מתאים ביזנס
-                        ticket_obj = BusinessTicket(
-                            ticket_id=ticket_id,
-                            passenger=passenger_obj,
-                            flight_number=data["flight_number"],
-                            base_price=float(data["base_price"]),
-                            seat_number=data["seat_number"]
-                        )
-                    else:  # אם לא נכנס לתנאי כלומר הכרטיס הוא מסוג תיירים
-                        ticket_obj = EconomyTicket(
-                            ticket_id=ticket_id,
-                            passenger=passenger_obj,
-                            flight_number=data["flight_number"],
-                            base_price=float(data["base_price"]),
-                            seat_number=data["seat_number"]
-                        )
+                    # בחירת המחלקה המתאימה והמרה לאובייקט באמצעות הבנאי האלטרנטיבי from_dict
+                    ticket_cls = BusinessTicket if data.get("is_business", False) else EconomyTicket
+                    ticket_obj = ticket_cls.from_dict(data, passenger_obj)
 
                     yield ticket_obj  # תציג לי מה קיים באובייקט כרטיס לפי השדות שדרשנו
 
                 except (ValueError, KeyError) as error:  # במידה והתקבלו אחת מהשגיאות הבאות תציג באיזה שורה השגיאה קיימת
                     print(f"שגיאה בשורה {line_number}: {error}")
+
+    def find_ticket_by_id(self, ticket_id):#איתור כרטיס לפי מזהה - עובר על הקובץ בהדרגה ועוצר כשנמצא
+        for ticket in self.load_tickets_stream():
+            if ticket.ticket_id == ticket_id:
+                return ticket
+        return None  # לא נמצא כרטיס עם המזהה המבוקש
 
 class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף ובדיקת קשרים לכרטיסי טיסה קיימים
     def __init__(self, file_path="data/baggage_data.jsonl"):#מכיל קובץ של נתוני כבודה
@@ -85,14 +78,9 @@ class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף 
                     if valid_ticket_ids is not None and ticket_id not in valid_ticket_ids:
                         raise ValueError(f"מזוודה מקושרת לכרטיס שאינו קיים: {ticket_id}")
 
-                    bag_item = BaggageItem(
-                        baggage_id=data["bag_id"],
-                        ticket_id=ticket_id,
-                        weight_kg=float(data["weight_kg"]),
-                        status=data.get("status", "CHECKED_IN")
-                    )
+                    bag_item = BaggageItem.from_dict(data)  # המרה לאובייקט דרך הבנאי האלטרנטיבי
 
                     yield bag_item#תציג לי מה קיים באובייקט מזוודה לפי השדות שדרשנו
 
                 except (ValueError, KeyError) as error:#במידה והתקבלו אחת מהשגיאות הבאות תציג באיזה שורה השגיאה קיימת
-                    print(f"שגיאת כבודה בשורה {line_number}: {error}")
+                    print(f"שגיאת כבודה בשורה {line_number}: {error}")

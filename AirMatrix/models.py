@@ -17,6 +17,10 @@ class Passenger: #מייצגת נוסע במערכת ומנהלת את פרטי 
         passport_number = parts[2].strip()
         return cls(passenger_id, full_name, passport_number)
 
+    @classmethod #בנאי אלטרנטיבי ממילון (dict שהתקבל מ-json.loads)
+    def from_dict(cls, data):
+        return cls(data["passenger_id"], data["full_name"], data["passport_number"])
+
     def __str__(self):#מויעדת למשתמש הקצה בתצוגה
         return f"Full Name:{self.full_name} | Passport: {self.passport_number}"
 
@@ -35,14 +39,32 @@ class Passenger: #מייצגת נוסע במערכת ומנהלת את פרטי 
 class Ticket(ABC):#מחלקת בסיס אבסטרקטית שמייצגת כרטיס טיסה
     #יצירת בנאי בסיסי
     def __init__(self, ticket_id, passenger, flight_number, base_price, seat_number, status="CONFIRMED"):
-        if base_price < 0:#בדיקה שהמחיר לא שלילי
-            raise ValueError("Base price cannot be negative")
         self.ticket_id = ticket_id
         self.passenger = passenger #אובייקט מסוג מחלקת נוסע
         self.flight_number = flight_number
-        self.base_price = base_price
+        self.base_price = base_price #עובר דרך ה-setter ונבדק שם
         self.seat_number = seat_number
         self.status = status
+
+    @property #Encapsulation - המחיר נבדק בכל שינוי, לא רק בבנאי
+    def base_price(self):
+        return self._base_price
+
+    @base_price.setter
+    def base_price(self, value):
+        if value < 0:#בדיקה שהמחיר לא שלילי - גם בעת הנחה זמנית
+            raise ValueError(f"Base price cannot be negative (got {value})")
+        self._base_price = value
+
+    @classmethod #בנאי אלטרנטיבי ממילון - cls הוא המחלקה שעליה נקרא (EconomyTicket / BusinessTicket)
+    def from_dict(cls, data, passenger_obj):
+        return cls(
+            ticket_id=data["ticket_id"],
+            passenger=passenger_obj,
+            flight_number=data["flight_number"],
+            base_price=float(data["base_price"]),
+            seat_number=data["seat_number"],
+        )
 
     @abstractmethod#מתודה אבסטרקטית
     def calculate_final_price(self, extra_bags=0):
@@ -135,6 +157,8 @@ class BusinessTicket(Ticket):# יורשת ממחלקת בסיס כרטיס ומ�
 
 class Flight:#  מייצגת טיסה במערכת משמשת כמחלקה מרכזית ומייצגת הרכבה
     def __init__(self, flight_number, origin, destination, capacity):
+        if origin == destination:#בדיקת ולידציה - טיסה חייבת לעבור בין שני יעדים שונים
+            raise ValueError(f"Origin and destination must be different (got {origin})")
         self.flight_number = flight_number
         self.origin = origin
         self.destination = destination
@@ -189,12 +213,36 @@ class Flight:#  מייצגת טיסה במערכת משמשת כמחלקה מר�
 #-------------------------------------------
 
 class BaggageItem:#מייצגת פריט כבודה בודד של נוסע עם מעקב מצבים - מראה תהליך עסקי
+    # המצבים החוקיים בתהליך: CHECKED_IN -> SCREENED -> LOADED, או עיכוב HELD_OVERWEIGHT
+    VALID_STATUSES = ("CHECKED_IN", "SCREENED", "LOADED", "HELD_OVERWEIGHT")
+
     #בנאי בסיסי
     def __init__(self, baggage_id, ticket_id, weight_kg, status="CHECKED_IN"):
+        if status not in self.VALID_STATUSES:#מונע מצב עסקי לא חוקי
+            raise ValueError(f"Unknown baggage status: {status}")
         self.baggage_id = baggage_id
         self.ticket_id = ticket_id
-        self.weight_kg = weight_kg
-        self.status = status  # מצבים אפשריים: CHECKED_IN -> SCREENED -> LOADED
+        self.weight_kg = weight_kg #עובר דרך ה-setter
+        self.status = status
+
+    @property
+    def weight_kg(self):
+        return self._weight_kg
+
+    @weight_kg.setter
+    def weight_kg(self, value):
+        if value <= 0:#מזוודה חייבת משקל חיובי
+            raise ValueError(f"Baggage weight must be positive (got {value})")
+        self._weight_kg = value
+
+    @classmethod #בנאי אלטרנטיבי ממילון
+    def from_dict(cls, data):
+        return cls(
+            baggage_id=data["bag_id"],
+            ticket_id=data["ticket_id"],
+            weight_kg=float(data["weight_kg"]),
+            status=data.get("status", "CHECKED_IN"),
+        )
 
     def pass_security(self):#מעבירה את המזוודה בדיקה ביטחונית
         if self.status != "CHECKED_IN":
@@ -275,4 +323,4 @@ class BaggageManifest:#מנהלת את ריכוז המטען של טיסה ומ�
         return f"Manifest for Flight {self.flight_number}: {len(self.items)} bags, Total: {self.get_total_weight()}kg/{self.max_total_weight_kg}kg"
 
     def __repr__(self):#ייצוג מתודי במערכת
-        return f"BaggageManifest(flight_number={self.flight_number}, count={len(self.items)}, total_weight={self.get_total_weight()})"
+        return f"BaggageManifest(flight_number={self.flight_number}, count={len(self.items)}, total_weight={self.get_total_weight()})"
