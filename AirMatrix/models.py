@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from AirMatrix.strategies import StandardBaggageFee, SpecialCargoFee
+
 ##חלק ב
 ##מחלקה עסקית 1
 class Passenger: #מייצגת נוסע במערכת ומנהלת את פרטי הזיהוי שלו
@@ -238,13 +240,21 @@ class BaggageItem:#מייצגת פריט כבודה בודד של נוסע עם 
     VALID_STATUSES = ("CHECKED_IN", "SCREENED", "LOADED", "HELD_OVERWEIGHT")
 
     #בנאי בסיסי
-    def __init__(self, baggage_id, ticket_id, weight_kg, status="CHECKED_IN"):
+    def __init__(self, baggage_id, ticket_id, weight_kg, status="CHECKED_IN", fee_strategy=None):
         if status not in self.VALID_STATUSES:#מונע מצב עסקי לא חוקי
             raise ValueError(f"Unknown baggage status: {status}")
         self.baggage_id = baggage_id
         self.ticket_id = ticket_id
         self.weight_kg = weight_kg #עובר דרך ה-setter
         self.status = status
+        # שלב 2 - Strategy: שיטת חישוב העמלה מועברת מבחוץ (בדרך כלל ע"י ה-Factory)
+        self.fee_strategy = fee_strategy if fee_strategy is not None else StandardBaggageFee()
+
+    def calculate_fee(self):#המזוודה לא יודעת איך מחשבים - היא מאצילה לאסטרטגיה שקיבלה
+        return self.fee_strategy.calculate_fee(self.weight_kg)
+
+    def is_temperature_sensitive(self):#מזוודה רגילה לא רגישה למזג אוויר (נדרס ב-SpecialCargoItem)
+        return False
 
     @property
     def weight_kg(self):
@@ -280,6 +290,62 @@ class BaggageItem:#מייצגת פריט כבודה בודד של נוסע עם 
 
     def __repr__(self):#ייצוג מתודי במערכת
         return f"Baggage Item(baggage_id={self.baggage_id}, ticket_id={self.ticket_id}, weight_kg={self.weight_kg}, status={self.status})"
+
+
+class SpecialCargoItem(BaggageItem):#שלב 2: מטען רגיש (בעלי חיים / מזון מתכלה) - יורש מכבודה רגילה
+    # מותר להטיס רק אם הטמפרטורה ביעד בטווח הבטוח (מעלות צלזיוס).
+    # PET: בהשראת הכלל הנפוץ 45°F-85°F לבעלי חיים בבטן המטוס.
+    TEMPERATURE_LIMITS = {
+        "PET": (7.0, 29.5),
+        "PERISHABLE": (2.0, 25.0),
+    }
+    VALID_STATUSES = BaggageItem.VALID_STATUSES + ("HELD_WEATHER",)
+
+    def __init__(self, baggage_id, ticket_id, weight_kg, cargo_category, status="CHECKED_IN", fee_strategy=None):
+        if cargo_category not in self.TEMPERATURE_LIMITS:
+            raise ValueError(f"Unknown special cargo category: {cargo_category}")
+        super().__init__(baggage_id, ticket_id, weight_kg, status,
+                         fee_strategy if fee_strategy is not None else SpecialCargoFee())
+        self.cargo_category = cargo_category
+        self.hold_reason = None
+
+    def is_temperature_sensitive(self):#דריסה - פולימורפיזם: השירות שואל כל פריט בלי לבדוק את סוגו
+        return True
+
+    def is_safe_for(self, temperature_c):#בודקת אם הטמפרטורה ביעד בטווח הבטוח לקטגוריה
+        min_temp, max_temp = self.TEMPERATURE_LIMITS[self.cargo_category]
+        return min_temp <= temperature_c <= max_temp
+
+    def hold_for_weather(self, reason):#עיכוב העמסה בגלל מזג אוויר - אפשרי רק לפני שהפריט הועמס
+        if self.status == "LOADED":
+            raise ValueError(f"Cargo {self.baggage_id} is already loaded and cannot be held")
+        self.status = "HELD_WEATHER"
+        self.hold_reason = reason
+
+    def __str__(self):
+        return f"{self.cargo_category} cargo #{self.baggage_id} (Ticket: {self.ticket_id}) - {self.weight_kg}kg [{self.status}]"
+
+    def __repr__(self):
+        return (f"SpecialCargoItem(baggage_id={self.baggage_id}, ticket_id={self.ticket_id}, "
+                f"category={self.cargo_category}, status={self.status})")
+
+
+class GroundIncident:#פניית תחקור תפעולית לצוות הקרקע - נפתחת כשמטען רגיש מעוכב
+    def __init__(self, incident_id, flight_number, baggage_id, reason):
+        self.incident_id = incident_id
+        self.flight_number = flight_number
+        self.baggage_id = baggage_id
+        self.reason = reason
+        self.status = "OPEN"
+
+    def close(self):#סגירת הפנייה לאחר טיפול
+        self.status = "CLOSED"
+
+    def __str__(self):
+        return f"Incident {self.incident_id} [{self.status}] flight {self.flight_number}, cargo {self.baggage_id}: {self.reason}"
+
+    def __repr__(self):
+        return f"GroundIncident(incident_id={self.incident_id}, baggage_id={self.baggage_id}, status={self.status})"
 
 
 class BaggageManifest:#מנהלת את ריכוז המטען של טיסה ומכילה את הפעולות העסקיות להרחבה
@@ -336,6 +402,12 @@ class BaggageManifest:#מנהלת את ריכוז המטען של טיסה ומ�
             "usage_percent": round(usage_percent, 1),
             "warning_level": warning_level
         }
+
+    def get_total_fees(self):#פולימורפיזם + Strategy: כל פריט מחשב את העמלה לפי האסטרטגיה שלו
+        return round(sum(item.calculate_fee() for item in self.items), 2)
+
+    def get_held_items(self):#פריטים שמעוכבים (משקל או מזג אוויר)
+        return [item for item in self.items if item.status.startswith("HELD")]
 
     def __len__(self):#מספר מזוודות- מתודת קסם
         return len(self.items)
