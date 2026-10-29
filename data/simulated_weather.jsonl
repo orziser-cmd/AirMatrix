@@ -1,5 +1,5 @@
-{"destination": "FCO", "latitude": 41.80, "longitude": 12.25, "temperature_c": 19.0, "wind_speed_kmh": 12.0}
-{"destination": "CDG", "latitude": 49.01, "longitude": 2.55, "temperature_c": 11.0, "wind_speed_kmh": 18.0}
+{"destination": "FCO", "latitude": 41.8, "longitude": 12.25, "temperature_c": 19.0, "wind_speed_kmh": 12.0, "delay_seconds": 0.4}
+{"destination": "CDG", "latitude": 49.01, "longitude": 2.55, "temperature_c": 11.0, "wind_speed_kmh": 18.0, "delay_seconds": 0.1}
 {"destination": "LHR", "latitude": 51.47, "longitude": -0.45, "simulate_failure": true}
-{"destination": "OSL", "latitude": 60.19, "longitude": 11.10, "temperature_c": 3.0, "wind_speed_kmh": 22.0}
-{"destination": "DXB", "latitude": 25.25, "longitude": 55.36, "temperature_c": 31.0, "wind_speed_kmh": 9.0}
+{"destination": "OSL", "latitude": 60.19, "longitude": 11.1, "temperature_c": 3.0, "wind_speed_kmh": 22.0, "delay_seconds": 0.25}
+{"destination": "DXB", "latitude": 25.25, "longitude": 55.36, "temperature_c": 31.0, "wind_speed_kmh": 9.0, "delay_seconds": 0.15}
