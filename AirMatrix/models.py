@@ -35,6 +35,8 @@ class Passenger: #מייצגת נוסע במערכת ומנהלת את פרטי 
 class Ticket(ABC):#מחלקת בסיס אבסטרקטית שמייצגת כרטיס טיסה
     #יצירת בנאי בסיסי
     def __init__(self, ticket_id, passenger, flight_number, base_price, seat_number, status="CONFIRMED"):
+        if base_price < 0:#בדיקה שהמחיר לא שלילי
+            raise ValueError("Base price cannot be negative")
         self.ticket_id = ticket_id
         self.passenger = passenger #אובייקט מסוג מחלקת נוסע
         self.flight_number = flight_number
@@ -79,7 +81,10 @@ class EconomyTicket(Ticket):#יורשת ממחלקת בסיס ומייצגת כ�
     def calculate_final_price(self, extra_bags=0):#דריסה של מתודת מחלקת האב
         if extra_bags < 0: #בדיקת ולידציה וזריקת שגיאה
             raise ValueError("Extra bags cannot be negative")
-        return self.base_price + (extra_bags * self.baggage_fee)
+        total= self.base_price + (extra_bags * self.baggage_fee)
+        if total < 0:#מוודא שהתוצאה לא שלילית
+            raise ValueError("Final price cannot be negative")
+        return total
 
     def get_boarding_priority(self):#מוגדר אוטומטי תיירים כעדיפות 2
         return 2
@@ -113,6 +118,9 @@ class BusinessTicket(Ticket):# יורשת ממחלקת בסיס כרטיס ומ�
 
         if self.includes_lounge:#בדיקה אם גם יש כניסה לטרקלין
             total += self.lounge_fee#הוספה לסכום הכולל
+
+        if total<0:
+            raise ValueError("Final price cannot be negative")
 
         return total
 
@@ -153,8 +161,11 @@ class Flight:#  מייצגת טיסה במערכת משמשת כמחלקה מר�
         capacity = int(parts[3].strip())
         return cls(flight_number, origin, destination, capacity)
 
-    def add_ticket(self, ticket):#פעולה על אוסף - ביצוע הוספת כרטיס ובדיקת תקינות מול כמות
-        if len(self.tickets) >= self.capacity:
+    def add_ticket(self, ticket):#פעולה על אוסף - ביצוע בדיקות ולידציה
+        for existing_ticket in self.tickets:#בודק אם המושב כבר תפוס ברשימת הכרטיסים ומונע כפילויות
+            if existing_ticket.seat_number == ticket.seat_number:
+                raise ValueError(f"The Seat {ticket.seat_number} is already taken")
+        if len(self.tickets) >= self.capacity: #בדיקת תקינות אל מול הכמות המקסימלית של הכרטיסים במטוס
             raise ValueError(f"Flight {self.flight_number} is fully booked")
         self.tickets.append(ticket)
 
@@ -208,6 +219,12 @@ class BaggageManifest:#מנהלת את ריכוז המטען של טיסה ומ�
         self.flight_number = flight_number
         self.max_total_weight_kg = max_total_weight_kg
         self.items = [] #רשימה של מטעני כבודה - הרכבה
+
+    def add_item(self, item):
+        # בדיקת קשרי נתונים ותקינות משקל
+        if self.get_total_weight() + item.weight_kg > self.max_total_weight_kg:
+            raise ValueError(f"חריגה במשקל המקסימלי במנפסט לטיסה {self.flight_number}")
+        self.items.append(item)
 
     def get_total_weight(self):#מתודת חישוב משקל מסכם
         total = 0.0

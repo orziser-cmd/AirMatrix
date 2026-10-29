@@ -5,25 +5,34 @@ class TicketRepository:
     def __init__(self, file_path="data/sample_data.jsonl"):#מכיל קובץ של כרטיסים
         self.file_path = file_path
 
-    def load_tickets_stream(self):#טוענת את הקובץ וקוראת שורה שורה של כרטיס ומבצעת בדיקות ולידציה
+    def load_tickets_stream(self):  # טוענת את הקובץ וקוראת שורה שורה של כרטיס ומבצעת בדיקות ולידציה
+        seen_ticket_ids = set()  # סט לשמירת מזהי כרטיסים שכבר נקלטו לצורך בדיקת כפילויות
         with open(self.file_path, "r", encoding="utf-8") as file:  # סטנדרט קריאה בינלאומי
             for line_number, line in enumerate(file, start=1):
-                clean_line = line.strip()#מוריד את הרווחים את הירידה שורה יוצר שורה נקייה
-                if not clean_line:#אם עדיין לא נקי תמשיך בתהליך
+                clean_line = line.strip()  # מוריד את הרווחים את הירידה שורה יוצר שורה נקייה
+                if not clean_line:  # אם עדיין לא נקי תמשיך בתהליך
                     continue
-#אם סיימת לנקות תתחיל לבצע בדיקות ולידציה
+                # אם סיימת לנקות תתחיל לבצע בדיקות ולידציה
                 try:
                     data = json.loads(clean_line)
-                    required_keys = ["ticket_id", "passenger_name", "flight_number", "base_price", "seat_number"]#כל השדות הרשומים
+                    required_keys = ["ticket_id", "passenger_name", "flight_number", "base_price",
+                                     "seat_number"]  # כל השדות הרשומים
                     for key in required_keys:
-                        if key not in data:#אם חסר שדה תקפיץ שגיאה
+                        if key not in data:  # אם חסר שדה תקפיץ שגיאה
                             raise ValueError(f"שדה חסר: {key}")  # בדיקת שדה חסר
-#ממשיך לרוץ עדיין בלולאה
+
+                    # בדיקת מזהי כרטיסים כפולים בזמן טעינת הנתונים (לבקשת המרצה)
+                    ticket_id = data["ticket_id"]
+                    if ticket_id in seen_ticket_ids:
+                        raise ValueError(f"מזהה כרטיס כפול נמצא בקובץ: {ticket_id}")
+                    seen_ticket_ids.add(ticket_id)
+
+                    # ממשיך לרוץ עדיין בלולאה
                     if float(data["base_price"]) < 0:  # בדיקת ערכים לא תקינים במקרה הזה אם המחיר כרטיס שלילי
                         raise ValueError("מחיר כרטיס לא יכול להיות שלילי")
 
                     # יצירת אובייקט Passenger בהתאם ל-פרמטרים ב-models.py
-                    passenger_id = f"PID_{data['ticket_id']}"
+                    passenger_id = f"PID_{ticket_id}"
                     passport_num = f"P{line_number:05d}"
                     passenger_obj = Passenger(
                         passenger_id=passenger_id,
@@ -31,28 +40,27 @@ class TicketRepository:
                         passport_number=passport_num
                     )
 
-                    if data.get("is_business", False):  # המרה לאובייקט כרטיס מתאים - ביזנס
+                    if data.get("is_business", False):  # המרה לאובייקט כרטיס מתאים ביזנס
                         ticket_obj = BusinessTicket(
-                            ticket_id=data["ticket_id"],
+                            ticket_id=ticket_id,
                             passenger=passenger_obj,
                             flight_number=data["flight_number"],
                             base_price=float(data["base_price"]),
                             seat_number=data["seat_number"]
                         )
-                    else: #אם לא נכנס לתנאי כלומר הכרטיס הוא מסוג תיירים
+                    else:  # אם לא נכנס לתנאי כלומר הכרטיס הוא מסוג תיירים
                         ticket_obj = EconomyTicket(
-                            ticket_id=data["ticket_id"],
+                            ticket_id=ticket_id,
                             passenger=passenger_obj,
                             flight_number=data["flight_number"],
                             base_price=float(data["base_price"]),
                             seat_number=data["seat_number"]
                         )
 
-                    yield ticket_obj #תציג לי מה קיים באובייקט כרטיס לפי השדות שדרשנו
+                    yield ticket_obj  # תציג לי מה קיים באובייקט כרטיס לפי השדות שדרשנו
 
-                except (ValueError, KeyError) as error: #במידה והתקבלו אחת מהשגיאות הבאות תציג באיזה שורה השגיאה קיימת
+                except (ValueError, KeyError) as error:  # במידה והתקבלו אחת מהשגיאות הבאות תציג באיזה שורה השגיאה קיימת
                     print(f"שגיאה בשורה {line_number}: {error}")
-
 
 class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף ובדיקת קשרים לכרטיסי טיסה קיימים
     def __init__(self, file_path="data/baggage_data.jsonl"):#מכיל קובץ של נתוני כבודה

@@ -13,18 +13,22 @@ def demonstrate_list_and_tuples(flights):
     # שימוש ב-* לפריקת שורת נתונים המכילה ערכים נוספים
     sample_raw_record = ["AM101", "TLV", "JFK", "Terminal 3", "Gate B4", "On Schedule"]
     flight_id, src, dst, *extra_airport_details = sample_raw_record
-
     return flight_records, extra_airport_details
 
-#set (ערכים ייחודיים, פעולות קבוצתיות ואימות)
+# set (ערכים ייחודיים, פעולות קבוצתיות ואימות)
 def demonstrate_sets(all_tickets, cancelled_ticket_ids):
-    #שימוש ב-set לשמירת מזהים ייחודיים ובדיקות קבוצתיות
-    #הערכים הם מחרוזות (hashable)
-    active_ticket_ids = set()# יצירת קבוצת כל מזהי הכרטיסים
-    for ticket in all_tickets: #טיפוס שהוא מחרוזת טקסט ולכן הוא האשבל כי הוא אימיוטיבל
-        active_ticket_ids.add(ticket.ticket_id)  #  add - הוספת מזהה כרטיס חדש
-    #  בדיקת השתייכות באמצעות in
-    is_valid = "T101" in active_ticket_ids
+    # שימוש ב-set לשמירת מזהים ייחודיים ובדיקות קבוצתיות
+    # הערכים הם מחרוזות (hashable)
+    active_ticket_ids = set()  # יצירת קבוצת כל מזהי הכרטיסים
+    for ticket in all_tickets:  # טיפוס שהוא מחרוזת טקסט ולכן הוא האשבל כי הוא אימיוטיבל
+        active_ticket_ids.add(ticket.ticket_id)  # add - הוספת מזהה כרטיס חדש
+
+    # שימוש בפרמטר שהתקבל והמרתו לסט לצורך עבודה קבוצתית
+    cancelled_set = set(cancelled_ticket_ids)
+
+    # בדיקת השתייכות באמצעות in מול מזהה רלוונטי מתוך הנתונים במקום מזהה קשיח T101
+    check_id = list(cancelled_set)[0] if cancelled_set else "T101"
+    is_valid = check_id in active_ticket_ids
     return active_ticket_ids, is_valid
 
 # dict (שני מילונים, get, איטרציית items עם unpacking ומניעת כפילות)
@@ -125,3 +129,16 @@ def demonstrate_sorting(tickets):
     by_priority_and_price = sorted(tickets,key=lambda t: (t.get_boarding_priority(), -t.calculate_final_price()))#שמנו מינוס כדי להפוך את המחיר
 
     return by_price, by_seat, by_priority_and_price
+
+# Generator Pipeline: שרשרת של Generator Expressions נפרדים
+def demonstrate_generator_pipeline(tickets):
+    # שלב 1: סינון כרטיסים תקינים עם מחיר בסיס חיובי
+    valid_tickets_gen = (t for t in tickets if t.base_price > 0)
+
+    # שלב 2: חישוב המחיר הסופי בשרשרת (Lazy Evaluation)
+    prices_gen = (t.calculate_final_price() for t in valid_tickets_gen)
+
+    # שלב 3: סינון נוסף והפקת מחרוזות תוצאה מותאמות
+    formatted_results_gen = (f"Ticket Final Price: {price}" for price in prices_gen if price > 300)
+
+    return formatted_results_gen
