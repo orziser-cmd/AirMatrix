@@ -1,0 +1,5 @@
+{"flight_number": "LY001", "origin": "TLV", "destination": "FCO", "destination_city": "Rome", "latitude": 41.80, "longitude": 12.25, "capacity": 180}
+{"flight_number": "LY002", "origin": "TLV", "destination": "CDG", "destination_city": "Paris", "latitude": 49.01, "longitude": 2.55, "capacity": 200}
+{"flight_number": "LY003", "origin": "TLV", "destination": "LHR", "destination_city": "London", "latitude": 51.47, "longitude": -0.45, "capacity": 220}
+{"flight_number": "LY004", "origin": "TLV", "destination": "OSL", "destination_city": "Oslo", "latitude": 60.19, "longitude": 11.10, "capacity": 160}
+{"flight_number": "LY005", "origin": "TLV", "destination": "DXB", "destination_city": "Dubai", "latitude": 25.25, "longitude": 55.36, "capacity": 250}

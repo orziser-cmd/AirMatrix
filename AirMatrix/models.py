@@ -156,13 +156,22 @@ class BusinessTicket(Ticket):# יורשת ממחלקת בסיס כרטיס ומ�
         return f"Business Ticket(ticket_id={self.ticket_id}, flight_number={self.flight_number}, seat_number={self.seat_number})"
 
 class Flight:#  מייצגת טיסה במערכת משמשת כמחלקה מרכזית ומייצגת הרכבה
-    def __init__(self, flight_number, origin, destination, capacity):
+    def __init__(self, flight_number, origin, destination, capacity,
+                 destination_city=None, latitude=None, longitude=None):
         if origin == destination:#בדיקת ולידציה - טיסה חייבת לעבור בין שני יעדים שונים
             raise ValueError(f"Origin and destination must be different (got {origin})")
+        # שלב 2: קואורדינטות של שדה היעד - נדרשות כדי לשאול את שירות מזג האוויר
+        if latitude is not None and not -90 <= latitude <= 90:
+            raise ValueError(f"Latitude must be between -90 and 90 (got {latitude})")
+        if longitude is not None and not -180 <= longitude <= 180:
+            raise ValueError(f"Longitude must be between -180 and 180 (got {longitude})")
         self.flight_number = flight_number
         self.origin = origin
         self.destination = destination
         self.capacity = capacity
+        self.destination_city = destination_city
+        self.latitude = latitude
+        self.longitude = longitude
         self.tickets = [] #רשימה של אובייקטים מסוג כרטיס - הרכבה
 
     @property #ביצוע Encapsulation
@@ -184,6 +193,18 @@ class Flight:#  מייצגת טיסה במערכת משמשת כמחלקה מר�
         destination = parts[2].strip()
         capacity = int(parts[3].strip())
         return cls(flight_number, origin, destination, capacity)
+
+    @classmethod #בנאי אלטרנטיבי ממילון (שורה מ-data/flights.jsonl)
+    def from_dict(cls, data):
+        return cls(
+            flight_number=data["flight_number"],
+            origin=data["origin"],
+            destination=data["destination"],
+            capacity=int(data["capacity"]),
+            destination_city=data.get("destination_city"),
+            latitude=float(data["latitude"]),
+            longitude=float(data["longitude"]),
+        )
 
     def add_ticket(self, ticket):#פעולה על אוסף - ביצוע בדיקות ולידציה
         for existing_ticket in self.tickets:#בודק אם המושב כבר תפוס ברשימת הכרטיסים ומונע כפילויות
@@ -323,4 +344,26 @@ class BaggageManifest:#מנהלת את ריכוז המטען של טיסה ומ�
         return f"Manifest for Flight {self.flight_number}: {len(self.items)} bags, Total: {self.get_total_weight()}kg/{self.max_total_weight_kg}kg"
 
     def __repr__(self):#ייצוג מתודי במערכת
-        return f"BaggageManifest(flight_number={self.flight_number}, count={len(self.items)}, total_weight={self.get_total_weight()})"
+        return f"BaggageManifest(flight_number={self.flight_number}, count={len(self.items)}, total_weight={self.get_total_weight()})"
+
+
+#-------------------------------------------
+# שלב 2 - נתוני מזג אוויר שמתקבלים מהשירות החיצוני
+#-------------------------------------------
+
+class WeatherReport:#מייצגת תמונת מצב של מזג האוויר בשדה היעד, אחרי שהתשובה מה-API נבדקה
+    def __init__(self, latitude, longitude, temperature_c, wind_speed_kmh, observed_at, is_simulated=False):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.temperature_c = temperature_c
+        self.wind_speed_kmh = wind_speed_kmh
+        self.observed_at = observed_at    #זמן המדידה כפי שהשירות החזיר
+        self.is_simulated = is_simulated  #True = נתון מדומה (הרצה ללא רשת), False = נתון אמיתי מהרשת
+
+    def __str__(self):
+        source = "SIMULATED" if self.is_simulated else "LIVE"
+        return f"{self.temperature_c}°C, wind {self.wind_speed_kmh} km/h at {self.observed_at} [{source}]"
+
+    def __repr__(self):
+        return (f"WeatherReport(temperature_c={self.temperature_c}, wind_speed_kmh={self.wind_speed_kmh}, "
+                f"observed_at='{self.observed_at}', is_simulated={self.is_simulated})")

@@ -1,5 +1,5 @@
 import json
-from AirMatrix.models import BusinessTicket, EconomyTicket, Passenger, BaggageItem
+from AirMatrix.models import BusinessTicket, EconomyTicket, Passenger, BaggageItem, Flight
 
 class TicketRepository:
     def __init__(self, file_path="data/sample_data.jsonl"):#מכיל קובץ של כרטיסים
@@ -83,4 +83,28 @@ class BaggageRepository:#קריאת קובץ נתוני הכבודה הנוסף 
                     yield bag_item#תציג לי מה קיים באובייקט מזוודה לפי השדות שדרשנו
 
                 except (ValueError, KeyError) as error:#במידה והתקבלו אחת מהשגיאות הבאות תציג באיזה שורה השגיאה קיימת
-                    print(f"שגיאת כבודה בשורה {line_number}: {error}")
+                    print(f"שגיאת כבודה בשורה {line_number}: {error}")
+
+
+class FlightRepository:#שלב 2: קריאת קובץ הטיסות (כולל קואורדינטות היעד לשירות מזג האוויר)
+    def __init__(self, file_path="data/flights.jsonl"):
+        self.file_path = file_path
+
+    def load_flights_stream(self):#אותו עיקרון: שורה אחר שורה, json.loads, בדיקות, from_dict
+        seen_numbers = set()
+        with open(self.file_path, "r", encoding="utf-8") as file:
+            for line_number, line in enumerate(file, start=1):
+                clean_line = line.strip()
+                if not clean_line:
+                    continue
+                try:
+                    data = json.loads(clean_line)
+                    for key in ["flight_number", "origin", "destination", "capacity", "latitude", "longitude"]:
+                        if key not in data:
+                            raise ValueError(f"שדה חסר ברשומת טיסה: {key}")
+                    if data["flight_number"] in seen_numbers:
+                        raise ValueError(f"מספר טיסה כפול: {data['flight_number']}")
+                    seen_numbers.add(data["flight_number"])
+                    yield Flight.from_dict(data)
+                except (ValueError, KeyError) as error:
+                    print(f"שגיאת טיסה בשורה {line_number}: {error}")
