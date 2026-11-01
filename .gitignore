@@ -15,3 +15,6 @@ __pycache__/
 # מערכת הפעלה
 .DS_Store
 Thumbs.db
+# קבצי התקנה של החבילה
+*.egg-info/
+.pytest_cache/
