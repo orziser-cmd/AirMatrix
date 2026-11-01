@@ -5,7 +5,8 @@ from AirMatrix.iterators import (FlightSchedule, active_business_tickets_generat
 from AirMatrix.processing import (demonstrate_sorting, demonstrate_sets, build_tickets_by_id,
                                   group_tickets_by_passenger, process_security_queue,
                                   process_boarding_priority_queue, demonstrate_comprehensions)
-from AirMatrix.reports import generate_baggage_manifest_report, format_weather_check, format_incident
+from AirMatrix.reports import (generate_baggage_manifest_report, format_weather_check, format_incident,
+                               build_combined_report, print_combined_report)
 from AirMatrix.repository import FlightRepository
 from AirMatrix.config import AppConfig
 from AirMatrix.factories import create_weather_client
@@ -241,6 +242,14 @@ def main():
     print(f"{len(requests_at_counters)} דלפקים ניסו במקביל לשריין מקום אחד")
     print(f"מספר אישורים: {len(approved)} | מקומות פנויים שנשארו: {pet_hold.available_slots()}")
     print("(איזה דלפק קיבל את המקום משתנה בין הרצות - מה שחשוב הוא שיש בדיוק אישור אחד)\n")
+
+    # 12. דוח משולב: נתוני הטיסות (מערכת מרכזית) + כבודה ומטען רגיש (תת-מערכת) + פניות
+    print("=" * 60)
+    print("12. דוח משולב ומדד חדש: עמלות מטען בסיכון (REPORTS)")
+    print("=" * 60)
+    combined = build_combined_report(flights_by_number, tickets_by_id, manifests, weather_service.incidents)
+    print_combined_report(combined)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

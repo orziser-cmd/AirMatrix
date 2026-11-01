@@ -126,3 +126,24 @@ def build_combined_report(flights_by_number, tickets_by_id, manifests, incidents
               for key in ("passengers", "ticket_revenue", "held_cargo", "open_incidents",
                           "cargo_fees_at_risk", "affected_passengers")}
     return {"flights": flights, "totals": totals}
+
+
+def print_combined_report(report):#הדפסת הדוח המשולב בעברית - טבלה לכל טיסה ושורת סיכום
+    print("----------------------------------------------------------------------------------")
+    print("טיסה  | יעד | נוסעים | הכנסה מכרטיסים | מזוודות | מעוכבים | פניות פתוחות | עמלות בסיכון")
+    print("----------------------------------------------------------------------------------")
+    for flight_number, row in sorted(report["flights"].items()):
+        print(f"{flight_number} | {row['destination']} | {row['passengers']:>6} | {row['ticket_revenue']:>14.1f} | "
+              f"{row['bags']:>7} | {row['held_cargo']:>7} | {row['open_incidents']:>12} | {row['cargo_fees_at_risk']:>11.1f}")
+    totals = report["totals"]
+    print("----------------------------------------------------------------------------------")
+    print(f"סה\"כ: {totals['passengers']} נוסעים, הכנסה {totals['ticket_revenue']:.1f} ₪, "
+          f"{totals['open_incidents']} פניות פתוחות")
+    print(f"מדד חדש - עמלות מטען בסיכון: {totals['cargo_fees_at_risk']:.1f} ₪ "
+          f"({totals['affected_passengers']} נוסעים מושפעים)")
+
+    # תמיכה בהחלטה: הטיסה עם הכי הרבה כסף בסיכון מטופלת ראשונה
+    at_risk = [(row["cargo_fees_at_risk"], fn) for fn, row in report["flights"].items() if row["cargo_fees_at_risk"] > 0]
+    if at_risk:
+        amount, flight_number = max(at_risk)
+        print(f"המלצה: לטפל קודם בטיסה {flight_number} ({amount:.1f} ₪ בסיכון)")
