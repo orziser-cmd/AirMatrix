@@ -81,27 +81,48 @@ def format_incident(incident):
 
 
 # ---------- שלב 2: דוח משולב (מערכת מרכזית + תת-מערכת הכבודה) ----------
+# פותח בשיטת TDD (tests/test_reports.py). אחרי ה-Refactor כל חישוב נמצא בפונקציה קטנה עם שם ברור,
+# ו-build_combined_report רק מרכיבה אותם.
+
+def _tickets_for_flight(tickets_by_id, flight_number):#כל הכרטיסים של טיסה אחת (מערכת מרכזית)
+    return [ticket for ticket in tickets_by_id.values() if ticket.flight_number == flight_number]
+
+
+def _held_sensitive_items(items):#מטען רגיש שמעוכב - הבסיס למדד "עמלות בסיכון"
+    return [item for item in items if item.is_temperature_sensitive() and item.status.startswith("HELD")]
+
+
+def _count_open_incidents(incidents, flight_number):
+    return sum(1 for incident in incidents if incident.flight_number == flight_number and incident.status == "OPEN")
+
+
+def _build_flight_row(flight, tickets, items, open_incidents):
+    held_sensitive = _held_sensitive_items(items)
+    return {
+        "destination": flight.destination,
+        "passengers": len(tickets),
+        "ticket_revenue": sum(ticket.calculate_final_price() for ticket in tickets),  # פולימורפיזם
+        "bags": len(items),
+        "held_cargo": sum(1 for item in items if item.status.startswith("HELD")),
+        "open_incidents": open_incidents,
+        # המדד החדש: הכנסה מעמלות שתלויה במטען המעוכב (מחושבת דרך ה-Strategy של כל פריט)
+        "cargo_fees_at_risk": round(sum(item.calculate_fee() for item in held_sensitive), 2),
+        "affected_passengers": len({item.ticket_id for item in held_sensitive}),
+    }
+
+
 def build_combined_report(flights_by_number, tickets_by_id, manifests, incidents):
     flights = {}
     for flight_number, flight in flights_by_number.items():
-        flight_tickets = [t for t in tickets_by_id.values() if t.flight_number == flight_number]
         manifest = manifests.get(flight_number)
         items = manifest.items if manifest is not None else []
-        held = [item for item in items if item.status.startswith("HELD")]
-        held_sensitive = [item for item in held if item.is_temperature_sensitive()]
-        open_incidents = [i for i in incidents if i.flight_number == flight_number and i.status == "OPEN"]
-        flights[flight_number] = {
-            "destination": flight.destination,
-            "passengers": len(flight_tickets),
-            "ticket_revenue": sum(t.calculate_final_price() for t in flight_tickets),
-            "bags": len(items),
-            "held_cargo": len(held),
-            "open_incidents": len(open_incidents),
-            "cargo_fees_at_risk": sum(item.calculate_fee() for item in held_sensitive),
-            "affected_passengers": len({item.ticket_id for item in held_sensitive}),
-        }
-    totals = {
-        "cargo_fees_at_risk": sum(row["cargo_fees_at_risk"] for row in flights.values()),
-        "open_incidents": sum(row["open_incidents"] for row in flights.values()),
-    }
+        flights[flight_number] = _build_flight_row(
+            flight,
+            _tickets_for_flight(tickets_by_id, flight_number),
+            items,
+            _count_open_incidents(incidents, flight_number),
+        )
+    totals = {key: round(sum(row[key] for row in flights.values()), 2)
+              for key in ("passengers", "ticket_revenue", "held_cargo", "open_incidents",
+                          "cargo_fees_at_risk", "affected_passengers")}
     return {"flights": flights, "totals": totals}
