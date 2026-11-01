@@ -78,3 +78,30 @@ def format_incident(incident):
     status = "פתוחה" if incident.status == "OPEN" else "סגורה"
     return (f"פנייה {incident.incident_id} ({status}) | טיסה {incident.flight_number} | "
             f"מטען {incident.baggage_id} | סיבה: {incident.reason}")
+
+
+# ---------- שלב 2: דוח משולב (מערכת מרכזית + תת-מערכת הכבודה) ----------
+def build_combined_report(flights_by_number, tickets_by_id, manifests, incidents):
+    flights = {}
+    for flight_number, flight in flights_by_number.items():
+        flight_tickets = [t for t in tickets_by_id.values() if t.flight_number == flight_number]
+        manifest = manifests.get(flight_number)
+        items = manifest.items if manifest is not None else []
+        held = [item for item in items if item.status.startswith("HELD")]
+        held_sensitive = [item for item in held if item.is_temperature_sensitive()]
+        open_incidents = [i for i in incidents if i.flight_number == flight_number and i.status == "OPEN"]
+        flights[flight_number] = {
+            "destination": flight.destination,
+            "passengers": len(flight_tickets),
+            "ticket_revenue": sum(t.calculate_final_price() for t in flight_tickets),
+            "bags": len(items),
+            "held_cargo": len(held),
+            "open_incidents": len(open_incidents),
+            "cargo_fees_at_risk": sum(item.calculate_fee() for item in held_sensitive),
+            "affected_passengers": len({item.ticket_id for item in held_sensitive}),
+        }
+    totals = {
+        "cargo_fees_at_risk": sum(row["cargo_fees_at_risk"] for row in flights.values()),
+        "open_incidents": sum(row["open_incidents"] for row in flights.values()),
+    }
+    return {"flights": flights, "totals": totals}
