@@ -229,8 +229,8 @@ AirMatrix/
 
   | משתתפת | אחריות |
   | :--- | :--- |
-  | אור זיסר | ניהול המאגר ב-GitHub, תיקוני שלב 1, ושירות מזג האוויר: `api_client.py` ו-`config.py` (Retry, טיפול בשגיאות, logging) |
-  | עדן ביטון | תת-מערכת המטען הרגיש והתהליך המשולב: `SpecialCargoItem`, `GroundIncident`, `services.py`, והדוח המשולב שפותח ב-TDD (`reports.py`) |
+  | אור זיסר | ניהול המאגר ב-GitHub, תיקוני שלב 1, שירות מזג האוויר: `api_client.py` ו-`config.py` (Retry, טיפול בשגיאות, logging), והתהליך המשולב ב-`services.py` (`CargoWeatherService` – עיכוב מטען רגיש ופתיחת פנייה, ומעבר לבדיקה ידנית בכשל) |
+  | עדן ביטון | תת-מערכת המטען הרגיש: `SpecialCargoItem` ו-`GroundIncident`, והדוח המשולב והמדד "עמלות מטען בסיכון" שפותחו ב-TDD (`reports.py`) |
   | אור מנשה | תבניות התכנון: `factories.py` ו-`strategies.py`, והחיבור שלהן ל-Repositories ולמזוודות |
   | נועה רשטי שקורי | מקביליות ובדיקות: `async_processing.py`, `threaded_processing.py` ותיקיית `tests/`; תיעוד ב-README וב-AI_USAGE |
 
